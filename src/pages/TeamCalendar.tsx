@@ -1,377 +1,353 @@
 
 import { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useLeaveData } from '@/context/LeaveDataContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { 
-  addMonths, 
-  format, 
-  isSameDay, 
-  isWithinInterval, 
-  parseISO, 
-  startOfMonth, 
-  endOfMonth 
-} from 'date-fns';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar as CalendarIcon, List, Check, X } from 'lucide-react';
+import { useLeaveData } from '@/context/LeaveDataContext';
+import { format, isWeekend, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useAuth } from '@/context/AuthContext';
+import { CalendarIcon, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+type FilterType = 'all' | 'department' | 'approved';
 
 const TeamCalendar = () => {
   const { user } = useAuth();
-  const { leaveApplications, holidays } = useLeaveData();
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(new Date());
+  const { getAllLeaveApplications, getTeamMembers, getPublicHolidays } = useLeaveData();
+  const [date, setDate] = useState<Date>(new Date());
+  const [filterType, setFilterType] = useState<FilterType>('all');
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
-  const [department, setDepartment] = useState<string>('all');
   
   if (!user) return null;
   
-  // Filter approved leaves
-  const approvedLeaves = leaveApplications.filter(leave => 
-    leave.status === 'approved' && 
-    (department === 'all' || leave.department === department)
-  );
+  const allApplications = getAllLeaveApplications();
+  const teamMembers = getTeamMembers();
+  const publicHolidays = getPublicHolidays();
   
-  // Get leaves and holidays for the selected month
-  const monthStart = selectedMonth ? startOfMonth(selectedMonth) : startOfMonth(new Date());
-  const monthEnd = selectedMonth ? endOfMonth(selectedMonth) : endOfMonth(new Date());
-
-  const leavesInMonth = approvedLeaves.filter(leave => 
-    isWithinInterval(leave.startDate, { start: monthStart, end: monthEnd }) || 
-    isWithinInterval(leave.endDate, { start: monthStart, end: monthEnd })
-  );
+  // Filter applications based on selected filter
+  const filteredApplications = allApplications.filter(app => {
+    if (filterType === 'all') return true;
+    if (filterType === 'department') return app.department === user.department;
+    if (filterType === 'approved') return app.status === 'approved';
+    return true;
+  });
   
-  const holidaysInMonth = holidays.filter(holiday => 
-    isWithinInterval(holiday.date, { start: monthStart, end: monthEnd })
-  );
+  // Get applications for the selected month
+  const selectedMonthApplications = filteredApplications.filter(app => {
+    const startDate = new Date(app.startDate);
+    const endDate = new Date(app.endDate);
+    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const lastDayOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    
+    return (
+      (startDate <= lastDayOfMonth && startDate >= firstDayOfMonth) || 
+      (endDate <= lastDayOfMonth && endDate >= firstDayOfMonth) ||
+      (startDate <= firstDayOfMonth && endDate >= lastDayOfMonth)
+    );
+  });
   
-  // Get leaves and holidays for the selected date
-  const leavesOnDate = selectedDate ? 
-    approvedLeaves.filter(leave => 
-      isWithinInterval(selectedDate, { start: leave.startDate, end: leave.endDate })
-    ) : [];
+  // Group applications by employee
+  const applicationsByEmployee = selectedMonthApplications.reduce((acc, app) => {
+    if (!acc[app.employeeId]) {
+      acc[app.employeeId] = {
+        id: app.employeeId,
+        name: app.employeeName,
+        department: app.department,
+        applications: []
+      };
+    }
+    acc[app.employeeId].applications.push(app);
+    return acc;
+  }, {} as Record<string, { id: string; name: string; department: string; applications: typeof selectedMonthApplications }> );
   
-  const holidayOnDate = selectedDate ? 
-    holidays.find(holiday => isSameDay(holiday.date, selectedDate)) : undefined;
-  
-  const dayHasEvent = (day: Date) => {
-    return approvedLeaves.some(leave => 
-      isWithinInterval(day, { start: leave.startDate, end: leave.endDate })
-    ) || holidays.some(holiday => isSameDay(holiday.date, day));
+  // Check if an employee is on leave on a specific date
+  const isOnLeave = (employeeId: string, date: Date) => {
+    return selectedMonthApplications.some(app => 
+      app.employeeId === employeeId && 
+      app.status === 'approved' &&
+      new Date(app.startDate) <= date && 
+      new Date(app.endDate) >= date
+    );
   };
   
-  const getLeaveColor = (leaveType: string) => {
-    switch (leaveType.toLowerCase()) {
-      case 'annual':
-        return 'bg-blue-500';
-      case 'sick':
-        return 'bg-red-500';
-      case 'maternity':
-      case 'paternity':
-        return 'bg-pink-500';
-      case 'compassionate':
-        return 'bg-purple-500';
-      case 'unpaid':
-        return 'bg-gray-500';
-      case 'study':
-        return 'bg-green-500';
-      default:
-        return 'bg-blue-500';
-    }
+  // Get leave type for a specific date
+  const getLeaveType = (employeeId: string, date: Date) => {
+    const leave = selectedMonthApplications.find(app => 
+      app.employeeId === employeeId && 
+      app.status === 'approved' &&
+      new Date(app.startDate) <= date && 
+      new Date(app.endDate) >= date
+    );
+    return leave ? leave.leaveType : null;
+  };
+  
+  // Render legend
+  const renderLegend = () => (
+    <div className="flex flex-wrap gap-3 mt-3">
+      <div className="flex items-center gap-1">
+        <div className="w-3 h-3 rounded-full bg-purple-light"></div>
+        <span className="text-xs">Annual Leave</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+        <span className="text-xs">Sick Leave</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+        <span className="text-xs">Other Leave</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+        <span className="text-xs">Public Holiday</span>
+      </div>
+    </div>
+  );
+  
+  // Check if a date is a public holiday
+  const isPublicHoliday = (date: Date) => {
+    return publicHolidays.some(holiday => 
+      isSameDay(new Date(holiday.date), date)
+    );
+  };
+  
+  // Get public holiday name
+  const getHolidayName = (date: Date) => {
+    const holiday = publicHolidays.find(h => 
+      isSameDay(new Date(h.date), date)
+    );
+    return holiday ? holiday.name : null;
+  };
+  
+  // Custom day renderer for the calendar
+  const renderDay = (props: React.ComponentProps<typeof Calendar>['components']['day']) => {
+    const { date } = props;
+    
+    if (!date) return null;
+
+    // Check if the day is a weekend or public holiday
+    const isWeekendDay = isWeekend(date);
+    const isHoliday = isPublicHoliday(date);
+    
+    // Get employes on leave for this day
+    const employeesOnLeave = Object.values(applicationsByEmployee)
+      .filter(employee => isOnLeave(employee.id, date))
+      .map(employee => ({
+        id: employee.id,
+        name: employee.name,
+        leaveType: getLeaveType(employee.id, date) || 'unknown'
+      }));
+    
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <div
+            {...props}
+            className={cn(
+              props.className,
+              isWeekendDay ? 'bg-gray-50' : '',
+              isHoliday ? 'bg-red-100' : '',
+              employeesOnLeave.length > 0 ? 'border-2 border-purple-light rounded-md' : ''
+            )}
+          >
+            <div className="relative">
+              {props.children}
+              {employeesOnLeave.length > 0 && (
+                <div className="absolute bottom-0 inset-x-0 flex justify-center">
+                  <Badge variant="outline" className="text-[0.6rem] px-1 py-0">
+                    {employeesOnLeave.length}
+                  </Badge>
+                </div>
+              )}
+            </div>
+          </div>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 p-2">
+          <div className="space-y-2">
+            <div className="font-medium">{format(date, 'MMMM dd, yyyy')}</div>
+            
+            {isHoliday && (
+              <div className="bg-red-50 p-2 rounded-md">
+                <div className="text-sm font-medium text-red-800">
+                  Public Holiday: {getHolidayName(date)}
+                </div>
+              </div>
+            )}
+            
+            {employeesOnLeave.length > 0 ? (
+              <div className="space-y-1">
+                <div className="text-sm font-medium">Team members on leave:</div>
+                {employeesOnLeave.map((employee, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-sm py-1 border-b">
+                    <span>{employee.name}</span>
+                    <Badge 
+                      variant="outline" 
+                      className={cn(
+                        employee.leaveType === 'annual' && 'bg-purple-50 text-purple-800',
+                        employee.leaveType === 'sick' && 'bg-blue-50 text-blue-800',
+                        !['annual', 'sick'].includes(employee.leaveType) && 'bg-yellow-50 text-yellow-800'
+                      )}
+                    >
+                      {employee.leaveType}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500">No team members on leave</div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
   };
   
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Team Calendar</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            View upcoming leaves and holidays
-          </p>
-        </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <Select value={department} onValueChange={setDepartment}>
+      <h1 className="text-2xl font-bold">Team Calendar</h1>
+      
+      <div className="flex flex-col md:flex-row justify-between gap-4">
+        <div className="flex gap-2">
+          <Select value={filterType} onValueChange={(value) => setFilterType(value as FilterType)}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Department" />
+              <Filter className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Filter" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Departments</SelectItem>
-              <SelectItem value="Engineering">Engineering</SelectItem>
-              <SelectItem value="HR">Human Resources</SelectItem>
-              <SelectItem value="Finance">Finance</SelectItem>
-              <SelectItem value="Marketing">Marketing</SelectItem>
+              <SelectItem value="all">All Leaves</SelectItem>
+              <SelectItem value="department">My Department</SelectItem>
+              <SelectItem value="approved">Approved Only</SelectItem>
             </SelectContent>
           </Select>
-          
-          <div className="flex rounded-md overflow-hidden">
-            <Button
-              variant={view === 'calendar' ? 'default' : 'outline'}
-              size="icon"
-              onClick={() => setView('calendar')}
-              className={cn(
-                "rounded-r-none",
-                view === 'calendar' ? 'bg-purple-light hover:bg-purple-dark' : ''
-              )}
-            >
-              <CalendarIcon size={18} />
-            </Button>
-            <Button
-              variant={view === 'list' ? 'default' : 'outline'}
-              size="icon"
-              onClick={() => setView('list')}
-              className={cn(
-                "rounded-l-none",
-                view === 'list' ? 'bg-purple-light hover:bg-purple-dark' : ''
-              )}
-            >
-              <List size={18} />
-            </Button>
-          </div>
+        </div>
+        
+        <div className="flex gap-2">
+          <Tabs defaultValue="calendar" className="w-[200px]" onValueChange={(value) => setView(value as 'calendar' | 'list')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="calendar">Calendar</TabsTrigger>
+              <TabsTrigger value="list">List</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="shadow-sm lg:col-span-2">
+      {view === 'calendar' ? (
+        <Card>
           <CardHeader className="pb-3">
-            <CardTitle>Team Leave Calendar</CardTitle>
+            <CardTitle>Leave Schedule</CardTitle>
             <CardDescription>
-              View when team members are on leave
+              View team leave calendar and plan accordingly
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {view === 'calendar' ? (
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                month={selectedMonth}
-                onMonthChange={setSelectedMonth}
-                className="rounded-md border pointer-events-auto"
-                modifiersClassNames={{
-                  selected: 'bg-purple-light text-white hover:bg-purple-light hover:text-white',
-                }}
-                modifiers={{
-                  hasEvent: (day) => dayHasEvent(day),
-                }}
-                components={{
-                  DayContent: ({ day }) => {
-                    const hasHoliday = holidays.some(holiday => isSameDay(holiday.date, day));
-                    const hasLeave = approvedLeaves.some(leave => 
-                      isWithinInterval(day, { start: leave.startDate, end: leave.endDate })
-                    );
-                    
-                    return (
-                      <div className="relative h-full w-full p-2">
-                        <div className="text-center">{format(day, 'd')}</div>
-                        <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-0.5">
-                          {hasHoliday && (
-                            <div className="h-1 w-1 rounded-full bg-red-500"></div>
-                          )}
-                          {hasLeave && (
-                            <div className="h-1 w-1 rounded-full bg-blue-500"></div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  },
-                }}
-              />
-            ) : (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setSelectedMonth(addMonths(selectedMonth || new Date(), -1))}
-                  >
-                    Previous Month
-                  </Button>
-                  <h3 className="text-xl font-semibold">
-                    {format(selectedMonth || new Date(), 'MMMM yyyy')}
-                  </h3>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setSelectedMonth(addMonths(selectedMonth || new Date(), 1))}
-                  >
-                    Next Month
-                  </Button>
-                </div>
-                
-                <Tabs defaultValue="leaves">
-                  <TabsList className="mb-4">
-                    <TabsTrigger value="leaves">Team Leaves</TabsTrigger>
-                    <TabsTrigger value="holidays">Holidays</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="leaves">
-                    {leavesInMonth.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
-                        No leaves scheduled for this month
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {leavesInMonth.map((leave) => (
-                          <div key={leave.id} className="flex items-start justify-between border-b pb-3">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" />
-                                <AvatarFallback>{leave.employeeName.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-medium">{leave.employeeName}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {format(leave.startDate, "MMM d")} - {format(leave.endDate, "MMM d, yyyy")}
-                                </p>
-                                <div className="flex items-center mt-1">
-                                  <span 
-                                    className={cn(
-                                      "inline-block w-2 h-2 rounded-full mr-1",
-                                      getLeaveColor(leave.leaveType)
-                                    )}
-                                  ></span>
-                                  <span className="text-xs capitalize">{leave.leaveType} Leave</span>
-                                </div>
-                              </div>
-                            </div>
-                            <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Approved</Badge>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="holidays">
-                    {holidaysInMonth.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
-                        No holidays scheduled for this month
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {holidaysInMonth.map((holiday) => (
-                          <div key={holiday.id} className="flex items-start justify-between border-b pb-3">
-                            <div>
-                              <p className="font-medium">{holiday.name}</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {format(holiday.date, "EEEE, MMMM d, yyyy")}
-                              </p>
-                            </div>
-                            {holiday.isNational && (
-                              <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-                                National
-                              </Badge>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </div>
-            )}
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={(newDate) => newDate && setDate(newDate)}
+              className="rounded-md border"
+              components={{
+                Day: renderDay as React.ComponentType<any>
+              }}
+            />
+            {renderLegend()}
           </CardContent>
         </Card>
-        
-        <Card className="shadow-sm">
+      ) : (
+        <Card>
           <CardHeader className="pb-3">
-            <CardTitle>
-              {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a date'}
-            </CardTitle>
+            <CardTitle>Leave Schedule</CardTitle>
             <CardDescription>
-              Details for the selected date
+              List view of all leaves for {format(date, 'MMMM yyyy')}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {!selectedDate ? (
-              <div className="text-center py-8 text-gray-500">
-                Select a date to view details
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {holidayOnDate && (
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-red-600 flex items-center gap-2">
-                      <CalendarIcon size={16} />
-                      Holiday
-                    </h3>
-                    <div className="bg-red-50 p-3 rounded-md dark:bg-red-950">
-                      <p className="font-medium">{holidayOnDate.name}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {holidayOnDate.isNational ? 'National Holiday' : 'Company Holiday'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                
-                <div className="space-y-2">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <CalendarIcon size={16} />
-                    Team Members on Leave
-                  </h3>
-                  
-                  {leavesOnDate.length === 0 ? (
-                    <p className="text-gray-500 text-sm">
-                      No team members on leave on this date
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {leavesOnDate.map((leave) => (
-                        <div key={leave.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-md dark:bg-gray-800">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" />
-                            <AvatarFallback>{leave.employeeName.charAt(0)}</AvatarFallback>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Leave Type</TableHead>
+                  <TableHead>Period</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {selectedMonthApplications.length > 0 ? (
+                  selectedMonthApplications.map((app, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback>
+                              {app.employeeName.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
                           </Avatar>
-                          <div>
-                            <p className="font-medium">{leave.employeeName}</p>
-                            <div className="flex items-center">
-                              <span 
-                                className={cn(
-                                  "inline-block w-2 h-2 rounded-full mr-1",
-                                  getLeaveColor(leave.leaveType)
-                                )}
-                              ></span>
-                              <span className="text-xs capitalize">{leave.leaveType} Leave</span>
-                            </div>
-                            <p className="text-xs text-gray-500">{leave.department}</p>
-                          </div>
+                          <span>{app.employeeName}</span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-2">Legend</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block w-3 h-3 rounded-full bg-blue-500"></span>
-                      <span className="text-xs">Annual Leave</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block w-3 h-3 rounded-full bg-red-500"></span>
-                      <span className="text-xs">Sick Leave</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block w-3 h-3 rounded-full bg-pink-500"></span>
-                      <span className="text-xs">Parental Leave</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block w-3 h-3 rounded-full bg-purple-500"></span>
-                      <span className="text-xs">Compassionate</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+                      </TableCell>
+                      <TableCell>{app.department}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="outline" 
+                          className={cn(
+                            app.leaveType === 'annual' && 'bg-purple-50 text-purple-800',
+                            app.leaveType === 'sick' && 'bg-blue-50 text-blue-800',
+                            !['annual', 'sick'].includes(app.leaveType) && 'bg-yellow-50 text-yellow-800'
+                          )}
+                        >
+                          {app.leaveType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <CalendarIcon className="h-3 w-3" />
+                          <span>{format(new Date(app.startDate), 'MMM d')}</span>
+                          <span>-</span>
+                          <span>{format(new Date(app.endDate), 'MMM d')}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="outline" 
+                          className={cn(
+                            app.status === 'pending' && 'bg-yellow-50 text-yellow-800',
+                            app.status === 'approved' && 'bg-green-50 text-green-800',
+                            app.status === 'rejected' && 'bg-red-50 text-red-800'
+                          )}
+                        >
+                          {app.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center">
+                      No leave applications found for the selected criteria
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            
+            <div className="mt-4">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => setDate(new Date())}
+              >
+                <CalendarIcon className="h-4 w-4" />
+                Reset to Current Month
+              </Button>
+            </div>
           </CardContent>
         </Card>
-      </div>
+      )}
     </div>
   );
 };
