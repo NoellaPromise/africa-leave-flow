@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { format, addMonths, differenceInCalendarDays, addYears, isAfter, isBefore, startOfDay } from 'date-fns';
 
@@ -45,6 +44,7 @@ export type LeaveBalance = {
   study: number;
   unpaid: number;
   carryOver: number;
+  total?: number;
 };
 
 export type Holiday = {
@@ -52,6 +52,15 @@ export type Holiday = {
   name: string;
   date: Date;
   isNational: boolean;
+};
+
+export type TeamMember = {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  role: string;
+  avatar?: string;
 };
 
 interface LeaveDataContextType {
@@ -65,9 +74,11 @@ interface LeaveDataContextType {
   getUserLeaveApplications: (userId: string) => LeaveApplication[];
   getPendingApprovals: (managerId: string) => LeaveApplication[];
   calculateLeaveDuration: (startDate: Date, endDate: Date, isHalfDay: boolean) => number;
+  getPublicHolidays: () => Holiday[];
+  getAllLeaveApplications: () => LeaveApplication[];
+  getTeamMembers: () => TeamMember[];
 }
 
-// Initial mock data
 const initialLeaveApplications: LeaveApplication[] = [
   {
     id: '1',
@@ -213,18 +224,43 @@ const initialHolidays: Holiday[] = [
   }
 ];
 
+const initialTeamMembers: TeamMember[] = [
+  {
+    id: '1',
+    name: 'John Doe',
+    email: 'john@ist.com',
+    department: 'Engineering',
+    role: 'Developer'
+  },
+  {
+    id: '2',
+    name: 'Jane Smith',
+    email: 'jane@ist.com',
+    department: 'Engineering',
+    role: 'Manager'
+  },
+  {
+    id: '3',
+    name: 'Bob Johnson',
+    email: 'bob@ist.com',
+    department: 'HR',
+    role: 'HR Specialist'
+  }
+];
+
 const LeaveDataContext = createContext<LeaveDataContextType | undefined>(undefined);
 
 export const LeaveDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [leaveApplications, setLeaveApplications] = useState<LeaveApplication[]>(initialLeaveApplications);
   const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>(initialLeaveBalances);
   const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(initialTeamMembers);
 
-  // Load data from localStorage if exists
   useEffect(() => {
     const savedApplications = localStorage.getItem('lms-applications');
     const savedBalances = localStorage.getItem('lms-balances');
     const savedHolidays = localStorage.getItem('lms-holidays');
+    const savedTeamMembers = localStorage.getItem('lms-team-members');
 
     if (savedApplications) {
       const parsed = JSON.parse(savedApplications);
@@ -248,9 +284,12 @@ export const LeaveDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         date: new Date(holiday.date)
       })));
     }
+
+    if (savedTeamMembers) {
+      setTeamMembers(JSON.parse(savedTeamMembers));
+    }
   }, []);
 
-  // Save to localStorage on change
   useEffect(() => {
     localStorage.setItem('lms-applications', JSON.stringify(leaveApplications));
   }, [leaveApplications]);
@@ -263,12 +302,15 @@ export const LeaveDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.setItem('lms-holidays', JSON.stringify(holidays));
   }, [holidays]);
 
+  useEffect(() => {
+    localStorage.setItem('lms-team-members', JSON.stringify(teamMembers));
+  }, [teamMembers]);
+
   const calculateLeaveDuration = (startDate: Date, endDate: Date, isHalfDay: boolean): number => {
     if (isHalfDay) return 0.5;
     
     let days = differenceInCalendarDays(endDate, startDate) + 1;
     
-    // Subtract weekends (Saturday and Sunday)
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
       const dayOfWeek = currentDate.getDay();
@@ -278,7 +320,6 @@ export const LeaveDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       currentDate.setDate(currentDate.getDate() + 1);
     }
     
-    // Subtract holidays
     const holidaysInRange = holidays.filter(holiday => 
       isAfter(holiday.date, startOfDay(startDate)) && 
       isBefore(holiday.date, endDate)
@@ -337,8 +378,19 @@ export const LeaveDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const getPendingApprovals = (managerId: string) => {
-    // In a real app, we would filter by the manager's department or team
     return leaveApplications.filter(app => app.status === 'pending');
+  };
+
+  const getPublicHolidays = () => {
+    return holidays;
+  };
+
+  const getAllLeaveApplications = () => {
+    return leaveApplications;
+  };
+
+  const getTeamMembers = () => {
+    return teamMembers;
   };
 
   return (
@@ -353,7 +405,10 @@ export const LeaveDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         getUserLeaveBalance,
         getUserLeaveApplications,
         getPendingApprovals,
-        calculateLeaveDuration
+        calculateLeaveDuration,
+        getPublicHolidays,
+        getAllLeaveApplications,
+        getTeamMembers
       }}
     >
       {children}

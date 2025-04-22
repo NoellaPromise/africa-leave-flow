@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
@@ -14,20 +13,20 @@ import { useAuth } from '@/context/AuthContext';
 import { CalendarIcon, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DayProps } from "react-day-picker";
 
 type FilterType = 'all' | 'department' | 'approved';
 
 const TeamCalendar = () => {
   const { user } = useAuth();
-  const { getAllLeaveApplications, getTeamMembers, getPublicHolidays } = useLeaveData();
+  const { leaveApplications, getPublicHolidays } = useLeaveData();
   const [date, setDate] = useState<Date>(new Date());
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   
   if (!user) return null;
   
-  const allApplications = getAllLeaveApplications();
-  const teamMembers = getTeamMembers();
+  const allApplications = leaveApplications;
   const publicHolidays = getPublicHolidays();
   
   // Filter applications based on selected filter
@@ -125,7 +124,7 @@ const TeamCalendar = () => {
   };
   
   // Custom day renderer for the calendar
-  const renderDay = (props: React.ComponentProps<typeof Calendar>['components']['day']) => {
+  const renderDay = (props: DayProps) => {
     const { date } = props;
     
     if (!date) return null;
@@ -134,7 +133,7 @@ const TeamCalendar = () => {
     const isWeekendDay = isWeekend(date);
     const isHoliday = isPublicHoliday(date);
     
-    // Get employes on leave for this day
+    // Get employees on leave for this day
     const employeesOnLeave = Object.values(applicationsByEmployee)
       .filter(employee => isOnLeave(employee.id, date))
       .map(employee => ({
@@ -251,7 +250,7 @@ const TeamCalendar = () => {
               onSelect={(newDate) => newDate && setDate(newDate)}
               className="rounded-md border"
               components={{
-                Day: renderDay as React.ComponentType<any>
+                Day: renderDay
               }}
             />
             {renderLegend()}

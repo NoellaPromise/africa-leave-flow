@@ -32,7 +32,7 @@ const Dashboard = () => {
   
   // Get the three most recent applications
   const recentApplications = [...applications].sort((a, b) => 
-    new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime()
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   ).slice(0, 3);
   
   // Calculate stats
@@ -41,10 +41,13 @@ const Dashboard = () => {
   const rejectedCount = applications.filter(app => app.status === 'rejected').length;
   
   // Prepare data for pie chart
-  const usedAnnualLeave = leaveBalance?.total - (leaveBalance?.annual || 0);
+  const annualLeaveBalance = leaveBalance?.annual || 0;
+  const totalAnnualLeave = 20; // Default total days
+  const usedAnnualLeave = totalAnnualLeave - annualLeaveBalance;
+  
   const pieData = [
-    { name: 'Available', value: leaveBalance?.annual || 0 },
-    { name: 'Used', value: usedAnnualLeave || 0 }
+    { name: 'Available', value: annualLeaveBalance },
+    { name: 'Used', value: usedAnnualLeave }
   ];
   
   const COLORS = ['#8884d8', '#82ca9d'];
