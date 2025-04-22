@@ -1,25 +1,24 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
-	darkMode: ["class"],
-	content: [
-		"./pages/**/*.{ts,tsx}",
-		"./components/**/*.{ts,tsx}",
-		"./app/**/*.{ts,tsx}",
-		"./src/**/*.{ts,tsx}",
-	],
-	prefix: "",
-	theme: {
-		container: {
-			center: true,
-			padding: '2rem',
-			screens: {
-				'2xl': '1400px'
-			}
-		},
-		extend: {
-			colors: {
+  darkMode: ["class"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+  ],
+  prefix: "",
+  theme: {
+    container: {
+      center: true,
+      padding: '2rem',
+      screens: {
+        '2xl': '1400px'
+      }
+    },
+    extend: {
+      colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
@@ -63,28 +62,17 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom colors
-				purple: {
-					light: '#9b87f5',
-					DEFAULT: '#7E69AB',
-					dark: '#5D4D80'
-				},
-				orange: {
-					light: '#FFB066',
-					DEFAULT: '#F97316',
-					dark: '#C75A05'
-				},
-				success: {
-					light: '#F2FCE2',
-					DEFAULT: '#A7D277',
-					dark: '#658B2F'
-				},
-				error: {
-					light: '#FFE6E9',
-					DEFAULT: '#ea384c',
-					dark: '#B52A39'
-				}
-			},
+        purple: {
+          light: '#9287F5',
+          DEFAULT: '#5D2D8C',
+          dark: '#3A1A5B',
+        },
+        success: {
+          light: '#E6E1F5',
+          DEFAULT: '#7E59AB',
+          dark: '#4A367A'
+        },
+      },
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
@@ -122,7 +110,7 @@ export default {
 				'fade-in': 'fade-in 0.5s ease-out forwards',
 				'slide-in': 'slide-in 0.5s ease-out forwards'
 			}
-		}
-	},
-	plugins: [require("tailwindcss-animate")],
+    }
+  },
+  plugins: [require("tailwindcss-animate")],
 } satisfies Config;

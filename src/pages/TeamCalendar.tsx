@@ -14,22 +14,17 @@ import { CalendarIcon, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DayClickEventHandler } from "react-day-picker";
+import React from 'react';
 
 type FilterType = 'all' | 'department' | 'approved';
 
-interface CustomDayProps {
+interface CustomDayProps extends React.HTMLAttributes<HTMLDivElement> {
   date: Date;
   displayMonth?: Date;
   activeModifiers?: Record<string, boolean>;
   selected?: boolean;
   disabled?: boolean;
   hidden?: boolean;
-  children?: React.ReactNode;
-  className?: string;
-  style?: React.CSSProperties;
-  onClick?: DayClickEventHandler;
-  onMouseEnter?: (date: Date, event: React.MouseEvent) => void;
-  onKeyDown?: (date: Date, event: React.KeyboardEvent) => void;
 }
 
 const TeamCalendar = () => {
@@ -107,7 +102,7 @@ const TeamCalendar = () => {
         <span className="text-xs">Sick Leave</span>
       </div>
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+        <div className="w-3 h-3 rounded-full bg-purple-dark"></div>
         <span className="text-xs">Other Leave</span>
       </div>
       <div className="flex items-center gap-1">
@@ -131,7 +126,7 @@ const TeamCalendar = () => {
   };
   
   const renderDay = (props: CustomDayProps) => {
-    const { date } = props;
+    const { date, children, className, ...rest } = props;
     
     if (!date) return null;
 
@@ -150,16 +145,16 @@ const TeamCalendar = () => {
       <Popover>
         <PopoverTrigger asChild>
           <div
-            {...props}
+            {...rest}
             className={cn(
-              props.className,
+              className,
               isWeekendDay ? 'bg-gray-50' : '',
               isHoliday ? 'bg-red-100' : '',
               employeesOnLeave.length > 0 ? 'border-2 border-purple-light rounded-md' : ''
             )}
           >
             <div className="relative">
-              {props.children}
+              {children}
               {employeesOnLeave.length > 0 && (
                 <div className="absolute bottom-0 inset-x-0 flex justify-center">
                   <Badge variant="outline" className="text-[0.6rem] px-1 py-0">
