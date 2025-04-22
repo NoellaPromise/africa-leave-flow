@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,15 +41,15 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-light/10 to-purple-dark/10 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-purple-dark">Africa HR</h1>
+          <h1 className="text-3xl font-bold text-purple-dark">IST Africa HR</h1>
           <p className="text-gray-600">Leave Management System</p>
         </div>
         
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Sign In</CardTitle>
+            <CardTitle>Staff Login</CardTitle>
             <CardDescription>
-              Enter your credentials to access your account
+              Enter your IST Africa credentials
             </CardDescription>
           </CardHeader>
           <CardContent>
