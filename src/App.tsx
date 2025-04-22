@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider } from "@/components/layout/SidebarProvider";
 
+import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import LeaveApplication from "./pages/LeaveApplication";
 import LeaveApprovals from "./pages/LeaveApprovals";
@@ -34,8 +35,9 @@ const App = () => (
         <TooltipProvider>
           <SidebarProvider>
             <Routes>
+              <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/" element={<Layout />}>
+              <Route path="/dashboard" element={<Layout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="leave-application" element={<LeaveApplication />} />
                 <Route path="leave-approvals" element={<LeaveApprovals />} />

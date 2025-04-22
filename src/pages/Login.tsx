@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -9,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 const Login = () => {
   const { isAuthenticated, isLoading, login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,6 +18,7 @@ const Login = () => {
     setIsSubmitting(true);
     try {
       await login(email, password);
+      navigate('/dashboard');
     } finally {
       setIsSubmitting(false);
     }
@@ -32,7 +33,7 @@ const Login = () => {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" />;
+    return <Navigate to="/dashboard" />;
   }
 
   return (
