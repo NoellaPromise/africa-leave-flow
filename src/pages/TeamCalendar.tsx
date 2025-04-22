@@ -13,9 +13,24 @@ import { useAuth } from '@/context/AuthContext';
 import { CalendarIcon, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { DayProps } from "react-day-picker";
+import { DayClickEventHandler } from "react-day-picker";
 
 type FilterType = 'all' | 'department' | 'approved';
+
+interface CustomDayProps {
+  date: Date;
+  displayMonth?: Date;
+  activeModifiers?: Record<string, boolean>;
+  selected?: boolean;
+  disabled?: boolean;
+  hidden?: boolean;
+  children?: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+  onClick?: DayClickEventHandler;
+  onMouseEnter?: (date: Date, event: React.MouseEvent) => void;
+  onKeyDown?: (date: Date, event: React.KeyboardEvent) => void;
+}
 
 const TeamCalendar = () => {
   const { user } = useAuth();
@@ -29,7 +44,6 @@ const TeamCalendar = () => {
   const allApplications = leaveApplications;
   const publicHolidays = getPublicHolidays();
   
-  // Filter applications based on selected filter
   const filteredApplications = allApplications.filter(app => {
     if (filterType === 'all') return true;
     if (filterType === 'department') return app.department === user.department;
@@ -37,7 +51,6 @@ const TeamCalendar = () => {
     return true;
   });
   
-  // Get applications for the selected month
   const selectedMonthApplications = filteredApplications.filter(app => {
     const startDate = new Date(app.startDate);
     const endDate = new Date(app.endDate);
@@ -51,7 +64,6 @@ const TeamCalendar = () => {
     );
   });
   
-  // Group applications by employee
   const applicationsByEmployee = selectedMonthApplications.reduce((acc, app) => {
     if (!acc[app.employeeId]) {
       acc[app.employeeId] = {
@@ -65,7 +77,6 @@ const TeamCalendar = () => {
     return acc;
   }, {} as Record<string, { id: string; name: string; department: string; applications: typeof selectedMonthApplications }> );
   
-  // Check if an employee is on leave on a specific date
   const isOnLeave = (employeeId: string, date: Date) => {
     return selectedMonthApplications.some(app => 
       app.employeeId === employeeId && 
@@ -75,7 +86,6 @@ const TeamCalendar = () => {
     );
   };
   
-  // Get leave type for a specific date
   const getLeaveType = (employeeId: string, date: Date) => {
     const leave = selectedMonthApplications.find(app => 
       app.employeeId === employeeId && 
@@ -86,7 +96,6 @@ const TeamCalendar = () => {
     return leave ? leave.leaveType : null;
   };
   
-  // Render legend
   const renderLegend = () => (
     <div className="flex flex-wrap gap-3 mt-3">
       <div className="flex items-center gap-1">
@@ -108,14 +117,12 @@ const TeamCalendar = () => {
     </div>
   );
   
-  // Check if a date is a public holiday
   const isPublicHoliday = (date: Date) => {
     return publicHolidays.some(holiday => 
       isSameDay(new Date(holiday.date), date)
     );
   };
   
-  // Get public holiday name
   const getHolidayName = (date: Date) => {
     const holiday = publicHolidays.find(h => 
       isSameDay(new Date(h.date), date)
@@ -123,17 +130,14 @@ const TeamCalendar = () => {
     return holiday ? holiday.name : null;
   };
   
-  // Custom day renderer for the calendar
-  const renderDay = (props: DayProps) => {
+  const renderDay = (props: CustomDayProps) => {
     const { date } = props;
     
     if (!date) return null;
 
-    // Check if the day is a weekend or public holiday
     const isWeekendDay = isWeekend(date);
     const isHoliday = isPublicHoliday(date);
     
-    // Get employees on leave for this day
     const employeesOnLeave = Object.values(applicationsByEmployee)
       .filter(employee => isOnLeave(employee.id, date))
       .map(employee => ({
@@ -166,7 +170,7 @@ const TeamCalendar = () => {
             </div>
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-2">
+        <PopoverContent className="w-64 p-2 pointer-events-auto">
           <div className="space-y-2">
             <div className="font-medium">{format(date, 'MMMM dd, yyyy')}</div>
             
@@ -248,7 +252,7 @@ const TeamCalendar = () => {
               mode="single"
               selected={date}
               onSelect={(newDate) => newDate && setDate(newDate)}
-              className="rounded-md border"
+              className="rounded-md border pointer-events-auto"
               components={{
                 Day: renderDay
               }}

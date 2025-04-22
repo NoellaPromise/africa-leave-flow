@@ -6,16 +6,17 @@ import { useLeaveData } from '@/context/LeaveDataContext';
 import { Button } from '@/components/ui/button';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import { Calendar as CalendarIcon, FileText, Clock, Check, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 
-// Helper function to format dates
-const formatDate = (date: Date) => {
-  return format(date, 'MMM d, yyyy');
+// Helper function to safely format dates
+const formatDate = (date: Date | string) => {
+  const dateObj = date instanceof Date ? date : new Date(date);
+  return isValid(dateObj) ? format(dateObj, 'MMM d, yyyy') : 'Invalid date';
 };
 
 const Dashboard = () => {
@@ -56,19 +57,23 @@ const Dashboard = () => {
     setDate(selectedDate);
   };
   
-  const isPublicHoliday = (date: Date) => {
+  const isPublicHoliday = (date: Date | undefined) => {
+    if (!date) return false;
+    
     return publicHolidays.some(holiday => {
       const holidayDate = new Date(holiday.date);
-      return holidayDate.getDate() === date.getDate() && 
+      return isValid(holidayDate) && holidayDate.getDate() === date.getDate() && 
              holidayDate.getMonth() === date.getMonth() &&
              holidayDate.getFullYear() === date.getFullYear();
     });
   };
   
-  const getHolidayName = (date: Date) => {
+  const getHolidayName = (date: Date | undefined) => {
+    if (!date) return null;
+    
     const holiday = publicHolidays.find(h => {
       const holidayDate = new Date(h.date);
-      return holidayDate.getDate() === date.getDate() && 
+      return isValid(holidayDate) && holidayDate.getDate() === date.getDate() && 
              holidayDate.getMonth() === date.getMonth() &&
              holidayDate.getFullYear() === date.getFullYear();
     });
@@ -142,12 +147,13 @@ const Dashboard = () => {
                   {date ? format(date, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto p-0 pointer-events-auto">
                 <Calendar
                   mode="single"
                   selected={date}
                   onSelect={handleDateChange}
                   initialFocus
+                  className="pointer-events-auto"
                   modifiers={{
                     holiday: (date) => isPublicHoliday(date),
                   }}
@@ -169,13 +175,24 @@ const Dashboard = () => {
               <h4 className="text-sm font-medium mb-2">Upcoming Holidays</h4>
               <div className="space-y-2">
                 {publicHolidays
-                  .filter(holiday => new Date(holiday.date) >= new Date())
-                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                  .filter(holiday => {
+                    const holidayDate = new Date(holiday.date);
+                    return isValid(holidayDate) && holidayDate >= new Date();
+                  })
+                  .sort((a, b) => {
+                    const dateA = new Date(a.date);
+                    const dateB = new Date(b.date);
+                    return isValid(dateA) && isValid(dateB) ? 
+                      dateA.getTime() - dateB.getTime() : 0;
+                  })
                   .slice(0, 3)
                   .map((holiday, index) => (
                     <div key={index} className="flex justify-between items-center text-sm">
                       <span>{holiday.name}</span>
-                      <Badge variant="outline">{format(new Date(holiday.date), 'MMM d')}</Badge>
+                      <Badge variant="outline">
+                        {isValid(new Date(holiday.date)) ? 
+                          format(new Date(holiday.date), 'MMM d') : 'Invalid date'}
+                      </Badge>
                     </div>
                   ))}
               </div>

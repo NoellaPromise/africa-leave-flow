@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useLeaveData } from '@/context/LeaveDataContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -36,7 +35,6 @@ const ApplicationsTab = () => {
   
   const allApplications = getAllLeaveApplications();
   
-  // Filter applications based on selected department and search term
   const filteredApplications = allApplications.filter(app => {
     const matchesDepartment = selectedDepartment === 'All Departments' || app.department === selectedDepartment;
     const matchesSearch = 
@@ -125,7 +123,11 @@ const ApplicationsTab = () => {
                     {app.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{format(new Date(app.appliedDate), 'MMM d, yyyy')}</TableCell>
+                <TableCell>
+                  {isValid(new Date(app.appliedDate)) 
+                    ? format(new Date(app.appliedDate), 'MMM d, yyyy')
+                    : format(new Date(app.createdAt), 'MMM d, yyyy')}
+                </TableCell>
               </TableRow>
             ))
           ) : (
@@ -147,7 +149,6 @@ const EmployeesTab = () => {
   
   const employees = getTeamMembers();
   
-  // Filter employees based on search term
   const filteredEmployees = employees.filter(emp => 
     emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -186,8 +187,8 @@ const EmployeesTab = () => {
               <TableRow key={index}>
                 <TableCell className="font-medium">{emp.name}</TableCell>
                 <TableCell>{emp.department}</TableCell>
-                <TableCell>{emp.position}</TableCell>
-                <TableCell>{emp.leaveBalance.annual} days</TableCell>
+                <TableCell>{emp.position || emp.role}</TableCell>
+                <TableCell>{emp.leaveBalance?.annual || 0} days</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="sm">
                     <Pencil className="h-4 w-4" />
@@ -209,9 +210,9 @@ const EmployeesTab = () => {
 };
 
 const SettingsTab = () => {
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: new Date()
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: new Date(2025, 0, 1),
+    to: new Date(2025, 0, 31)
   });
   const [autoApproval, setAutoApproval] = useState(false);
   const [notifyManagers, setNotifyManagers] = useState(true);
@@ -252,14 +253,15 @@ const SettingsTab = () => {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
                 <Calendar
                   initialFocus
                   mode="range"
                   defaultMonth={dateRange?.from}
                   selected={dateRange}
-                  onSelect={setDateRange}
+                  onSelect={(range) => setDateRange(range || { from: new Date(2025, 0, 1), to: new Date(2025, 0, 31) })}
                   numberOfMonths={2}
+                  className="pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>

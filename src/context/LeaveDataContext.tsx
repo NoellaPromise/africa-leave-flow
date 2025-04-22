@@ -30,6 +30,7 @@ export type LeaveApplication = {
   approverNotes?: string;
   createdAt: Date;
   updatedAt: Date;
+  appliedDate: Date;
   approvedBy?: string;
   department: string;
 };
@@ -60,6 +61,8 @@ export type TeamMember = {
   email: string;
   department: string;
   role: string;
+  position: string;
+  leaveBalance: { annual: number };
   avatar?: string;
 };
 
@@ -67,7 +70,7 @@ interface LeaveDataContextType {
   leaveApplications: LeaveApplication[];
   leaveBalances: LeaveBalance[];
   holidays: Holiday[];
-  createLeaveApplication: (application: Omit<LeaveApplication, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => void;
+  createLeaveApplication: (application: Omit<LeaveApplication, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'appliedDate'>) => void;
   updateLeaveStatus: (id: string, status: LeaveStatus, approverNotes?: string) => void;
   cancelLeaveApplication: (id: string) => void;
   getUserLeaveBalance: (userId: string) => LeaveBalance | undefined;
@@ -92,6 +95,7 @@ const initialLeaveApplications: LeaveApplication[] = [
     isHalfDay: false,
     createdAt: new Date(2025, 3, 15),
     updatedAt: new Date(2025, 3, 16),
+    appliedDate: new Date(2025, 3, 15),
     approvedBy: '2',
     department: 'Engineering'
   },
@@ -107,6 +111,7 @@ const initialLeaveApplications: LeaveApplication[] = [
     isHalfDay: false,
     createdAt: new Date(2025, 4, 30),
     updatedAt: new Date(2025, 4, 30),
+    appliedDate: new Date(2025, 4, 30),
     department: 'Engineering'
   },
   {
@@ -121,6 +126,7 @@ const initialLeaveApplications: LeaveApplication[] = [
     isHalfDay: false,
     createdAt: new Date(2025, 4, 25),
     updatedAt: new Date(2025, 4, 25),
+    appliedDate: new Date(2025, 4, 25),
     department: 'Engineering'
   }
 ];
@@ -230,21 +236,27 @@ const initialTeamMembers: TeamMember[] = [
     name: 'John Doe',
     email: 'john@ist.com',
     department: 'Engineering',
-    role: 'Developer'
+    role: 'Developer',
+    position: 'Senior Developer',
+    leaveBalance: { annual: 18 }
   },
   {
     id: '2',
     name: 'Jane Smith',
     email: 'jane@ist.com',
     department: 'Engineering',
-    role: 'Manager'
+    role: 'Manager',
+    position: 'Team Lead',
+    leaveBalance: { annual: 15 }
   },
   {
     id: '3',
     name: 'Bob Johnson',
     email: 'bob@ist.com',
     department: 'HR',
-    role: 'HR Specialist'
+    role: 'HR Specialist',
+    position: 'HR Manager',
+    leaveBalance: { annual: 20 }
   }
 ];
 
@@ -269,7 +281,8 @@ export const LeaveDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         startDate: new Date(app.startDate),
         endDate: new Date(app.endDate),
         createdAt: new Date(app.createdAt),
-        updatedAt: new Date(app.updatedAt)
+        updatedAt: new Date(app.updatedAt),
+        appliedDate: new Date(app.appliedDate)
       })));
     }
 
@@ -330,13 +343,15 @@ export const LeaveDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return Math.max(0, days);
   };
 
-  const createLeaveApplication = (application: Omit<LeaveApplication, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
+  const createLeaveApplication = (application: Omit<LeaveApplication, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'appliedDate'>) => {
+    const now = new Date();
     const newApplication: LeaveApplication = {
       ...application,
       id: Date.now().toString(),
       status: 'pending',
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: now,
+      updatedAt: now,
+      appliedDate: now
     };
     
     setLeaveApplications(prev => [...prev, newApplication]);
