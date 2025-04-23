@@ -28,7 +28,7 @@ const Login = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-light"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-medium"></div>
       </div>
     );
   }
@@ -38,10 +38,10 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-light/10 to-purple-dark/10 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-pale/10 to-teal-dark/10 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-purple-dark">IST Africa HR</h1>
+          <h1 className="text-3xl font-bold text-teal-dark">IST Africa HR</h1>
           <p className="text-gray-600">Leave Management System</p>
         </div>
         
@@ -78,7 +78,7 @@ const Login = () => {
               </div>
               <Button 
                 type="submit" 
-                className="w-full bg-purple-light hover:bg-purple-dark"
+                className="w-full bg-teal-medium hover:bg-teal-dark"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -108,3 +108,4 @@ const Login = () => {
 };
 
 export default Login;
+

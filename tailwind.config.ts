@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -64,16 +63,16 @@ export default {
           ring: 'hsl(var(--sidebar-ring))'
         },
         teal: {
-          dark: '#1D4E4E',     // Dark teal (top shade in the image)
-          medium: '#4A7C78',   // Medium teal (second shade)
-          light: '#7AA9A4',    // Light teal (third shade)
-          pale: '#C5E0DC',     // Very light teal (bottom shade)
+          dark: 'hsl(180, 35%, 22%)',     // Dark teal
+          medium: 'hsl(180, 25%, 39%)',   // Medium teal
+          light: 'hsl(180, 33%, 78%)',    // Light teal
+          pale: 'hsl(180, 30%, 95%)'      // Very light teal
         },
-        success: {
-          light: '#C5E0DC',
-          DEFAULT: '#4A7C78',
-          dark: '#1D4E4E'
-        },
+        purple: {
+          dark: 'hsl(270, 50%, 40%)',     // Deep purple
+          medium: 'hsl(270, 40%, 50%)',   // Medium purple
+          light: 'hsl(270, 60%, 70%)'     // Light purple
+        }
       },
       borderRadius: {
         lg: 'var(--radius)',
