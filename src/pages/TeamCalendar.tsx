@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
@@ -13,7 +14,6 @@ import { useAuth } from '@/context/AuthContext';
 import { CalendarIcon, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { DayClickEventHandler } from "react-day-picker";
 import React from 'react';
 
 type FilterType = 'all' | 'department' | 'approved';
@@ -94,7 +94,7 @@ const TeamCalendar = () => {
   const renderLegend = () => (
     <div className="flex flex-wrap gap-3 mt-3">
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded-full bg-purple-light"></div>
+        <div className="w-3 h-3 rounded-full bg-teal-medium"></div>
         <span className="text-xs">Annual Leave</span>
       </div>
       <div className="flex items-center gap-1">
@@ -102,7 +102,7 @@ const TeamCalendar = () => {
         <span className="text-xs">Sick Leave</span>
       </div>
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded-full bg-purple-dark"></div>
+        <div className="w-3 h-3 rounded-full bg-teal-dark"></div>
         <span className="text-xs">Other Leave</span>
       </div>
       <div className="flex items-center gap-1">
@@ -150,7 +150,7 @@ const TeamCalendar = () => {
               className,
               isWeekendDay ? 'bg-gray-50' : '',
               isHoliday ? 'bg-red-100' : '',
-              employeesOnLeave.length > 0 ? 'border-2 border-purple-light rounded-md' : ''
+              employeesOnLeave.length > 0 ? 'border-2 border-teal-medium rounded-md' : ''
             )}
           >
             <div className="relative">
@@ -186,9 +186,9 @@ const TeamCalendar = () => {
                     <Badge 
                       variant="outline" 
                       className={cn(
-                        employee.leaveType === 'annual' && 'bg-purple-50 text-purple-800',
+                        employee.leaveType === 'annual' && 'bg-teal-light/30 text-teal-dark',
                         employee.leaveType === 'sick' && 'bg-blue-50 text-blue-800',
-                        !['annual', 'sick'].includes(employee.leaveType) && 'bg-yellow-50 text-yellow-800'
+                        !['annual', 'sick'].includes(employee.leaveType) && 'bg-teal-pale text-teal-dark'
                       )}
                     >
                       {employee.leaveType}
@@ -293,9 +293,9 @@ const TeamCalendar = () => {
                         <Badge 
                           variant="outline" 
                           className={cn(
-                            app.leaveType === 'annual' && 'bg-purple-50 text-purple-800',
+                            app.leaveType === 'annual' && 'bg-teal-light/30 text-teal-dark',
                             app.leaveType === 'sick' && 'bg-blue-50 text-blue-800',
-                            !['annual', 'sick'].includes(app.leaveType) && 'bg-yellow-50 text-yellow-800'
+                            !['annual', 'sick'].includes(app.leaveType) && 'bg-teal-pale text-teal-dark'
                           )}
                         >
                           {app.leaveType}
@@ -314,7 +314,7 @@ const TeamCalendar = () => {
                           variant="outline" 
                           className={cn(
                             app.status === 'pending' && 'bg-yellow-50 text-yellow-800',
-                            app.status === 'approved' && 'bg-green-50 text-green-800',
+                            app.status === 'approved' && 'bg-teal-pale text-teal-dark',
                             app.status === 'rejected' && 'bg-red-50 text-red-800'
                           )}
                         >
