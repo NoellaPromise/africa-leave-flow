@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,17 @@ const Login = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMicrosoftLoading, setIsMicrosoftLoading] = useState(false);
 
+  // Check if we're being redirected from Microsoft auth
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    if (code) {
+      setIsMicrosoftLoading(true);
+      // The AuthContext will handle the actual processing
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -30,7 +41,7 @@ const Login = () => {
     setIsMicrosoftLoading(true);
     try {
       await loginWithMicrosoft();
-    } finally {
+    } catch (error) {
       setIsMicrosoftLoading(false);
     }
   };
@@ -59,7 +70,7 @@ const Login = () => {
           <CardHeader>
             <CardTitle>Staff Login</CardTitle>
             <CardDescription>
-              Enter your IST Africa credentials
+              Use your Microsoft account or IST Africa credentials
             </CardDescription>
           </CardHeader>
           <CardContent>
