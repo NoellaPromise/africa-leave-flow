@@ -27,7 +27,7 @@ const leaveTypes = [
   { id: 'study', label: 'Study Leave', requiresDoc: true, requiresReason: true },
   { id: 'unpaid', label: 'Unpaid Leave', requiresDoc: false, requiresReason: true },
 ];
-
+const API_URL = import.meta.env.VITE_URL
 const LeaveApplication = () => {
   const { user } = useAuth();
   const { createLeaveApplication, getUserLeaveBalance, calculateLeaveDuration } = useLeaveData();

@@ -48,7 +48,7 @@ const Sidebar = () => {
       <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200 dark:border-gray-800">
         {isOpen ? (
           <h1 className="text-xl font-bold text-purple-light">
-            Africa HR
+            IST Africa 
           </h1>
         ) : (
           <span className="text-xl font-bold text-purple-light">AHR</span>
