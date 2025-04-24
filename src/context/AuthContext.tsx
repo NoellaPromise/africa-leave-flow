@@ -10,6 +10,7 @@ interface User {
   role: 'staff' | 'manager' | 'admin';
   profilePicture: string;
   department: string;
+  provider?: 'email' | 'microsoft';
 }
 
 interface AuthContextType {
@@ -17,6 +18,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithMicrosoft: () => Promise<void>;
   logout: () => void;
 }
 
@@ -50,6 +52,16 @@ const MOCK_USERS = [
     role: 'admin' as const,
     profilePicture: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
     department: 'HR'
+  },
+  {
+    id: '4',
+    name: 'Microsoft User',
+    email: 'microsoft@ist.com',
+    password: '',
+    role: 'staff' as const,
+    profilePicture: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+    department: 'IT',
+    provider: 'microsoft'
   }
 ];
 
@@ -86,9 +98,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userWithoutPassword);
       localStorage.setItem('lms-user', JSON.stringify(userWithoutPassword));
       toast.success(`Welcome back, ${userWithoutPassword.name}!`);
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       toast.error('Login failed. Please check your credentials.');
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithMicrosoft = async () => {
+    try {
+      setIsLoading(true);
+      
+      // In a real app, this would redirect to Microsoft OAuth
+      // For demo purposes, we'll simulate the login process
+      await new Promise(r => setTimeout(r, 1500));
+      
+      // Find our mock Microsoft user
+      const microsoftUser = MOCK_USERS.find(u => u.provider === 'microsoft');
+      
+      if (!microsoftUser) {
+        throw new Error('Microsoft authentication failed');
+      }
+      
+      // Remove password before storing user
+      const { password: _, ...userWithoutPassword } = microsoftUser;
+      
+      setUser(userWithoutPassword);
+      localStorage.setItem('lms-user', JSON.stringify(userWithoutPassword));
+      toast.success(`Welcome, ${userWithoutPassword.name}! Signed in with Microsoft`);
+      navigate('/dashboard');
+    } catch (error) {
+      toast.error('Microsoft login failed. Please try again.');
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -108,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAuthenticated: !!user,
       isLoading,
       login,
+      loginWithMicrosoft,
       logout
     }}>
       {children}
