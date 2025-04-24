@@ -10,7 +10,7 @@ interface User {
   role: 'staff' | 'manager' | 'admin';
   profilePicture: string;
   department: string;
-  provider?: 'email' | 'microsoft';
+  provider?: 'email' | 'microsoft' | string;
 }
 
 interface AuthContextType {
@@ -61,7 +61,7 @@ const MOCK_USERS = [
     role: 'staff' as const,
     profilePicture: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
     department: 'IT',
-    provider: 'microsoft'
+    provider: 'microsoft' as const
   }
 ];
 
@@ -95,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Remove password before storing user
       const { password: _, ...userWithoutPassword } = foundUser;
       
-      setUser(userWithoutPassword);
+      setUser(userWithoutPassword as User);
       localStorage.setItem('lms-user', JSON.stringify(userWithoutPassword));
       toast.success(`Welcome back, ${userWithoutPassword.name}!`);
       navigate('/dashboard');
@@ -112,22 +112,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       
       // In a real app, this would redirect to Microsoft OAuth
-      // For demo purposes, we'll simulate the login process
+      // For demo purposes, we'll create a mock personal Microsoft account user
       await new Promise(r => setTimeout(r, 1500));
       
-      // Find our mock Microsoft user
-      const microsoftUser = MOCK_USERS.find(u => u.provider === 'microsoft');
+      // Create a mock personal Microsoft account user
+      const personalMicrosoftUser = {
+        id: '5',
+        name: 'Personal Microsoft User',
+        email: 'personal@outlook.com',
+        role: 'staff' as const,
+        profilePicture: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+        department: 'Marketing',
+        provider: 'microsoft' as const
+      };
       
-      if (!microsoftUser) {
-        throw new Error('Microsoft authentication failed');
-      }
-      
-      // Remove password before storing user
-      const { password: _, ...userWithoutPassword } = microsoftUser;
-      
-      setUser(userWithoutPassword);
-      localStorage.setItem('lms-user', JSON.stringify(userWithoutPassword));
-      toast.success(`Welcome, ${userWithoutPassword.name}! Signed in with Microsoft`);
+      setUser(personalMicrosoftUser);
+      localStorage.setItem('lms-user', JSON.stringify(personalMicrosoftUser));
+      toast.success(`Welcome, ${personalMicrosoftUser.name}! Signed in with personal Microsoft account`);
       navigate('/dashboard');
     } catch (error) {
       toast.error('Microsoft login failed. Please try again.');
