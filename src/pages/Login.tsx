@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { LogIn } from 'lucide-react';
 
 const Login = () => {
   const { isAuthenticated, isLoading, login, loginWithMicrosoft } = useAuth();
@@ -84,7 +85,7 @@ const Login = () => {
                 {isMicrosoftLoading ? (
                   <span className="flex items-center gap-2">
                     <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></span>
-                    Signing in with Microsoft...
+                    Redirecting to Microsoft...
                   </span>
                 ) : (
                   <>
@@ -133,7 +134,7 @@ const Login = () => {
               </div>
               <Button 
                 type="submit" 
-                className="w-full bg-teal-medium hover:bg-teal-dark"
+                className="w-full bg-teal-medium hover:bg-teal-dark flex items-center justify-center gap-2"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -142,7 +143,10 @@ const Login = () => {
                     Signing in...
                   </span>
                 ) : (
-                  'Sign In'
+                  <>
+                    <LogIn className="h-4 w-4" />
+                    Sign In with Email
+                  </>
                 )}
               </Button>
             </form>

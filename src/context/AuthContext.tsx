@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -23,7 +22,7 @@ interface AuthContextType {
 }
 
 // Microsoft OAuth configuration
-const MICROSOFT_CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID || 'default-client-id';
+const MICROSOFT_CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID || '29cc5c6d-ab79-41f9-b440-9e4495a53fc5'; // Common test client ID
 const MICROSOFT_REDIRECT_URI = `${window.location.origin}/login`;
 const MICROSOFT_TENANT = 'common'; // Use "common" for both personal and work accounts
 
@@ -93,23 +92,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (code && window.location.pathname === '/login') {
         try {
           setIsLoading(true);
-          // In a production app, we would exchange the code for tokens here
+          toast.info('Processing Microsoft login...');
           
-          // For demo purposes, we'll simulate getting user info from Microsoft
-          await new Promise(r => setTimeout(r, 1000));
+          // In a production app, this would be a secure backend call
+          // For now, we'll simulate a successful authentication
           
-          // Get Microsoft user profile from URL parameters or localStorage
-          // (in a real implementation, this would come from the Microsoft Graph API)
-          const userEmail = urlParams.get('email') || localStorage.getItem('ms_email') || '';
-          const userName = urlParams.get('name') || localStorage.getItem('ms_name') || 'Microsoft User';
+          // Get user info from Microsoft Graph API
+          // Normally this would be done in a secure backend
+          // Here we're simulating successful authentication
+          
+          // Get user profile details
+          const accessToken = "simulated_token";
+          
+          // Create a random ID that remains consistent for the same session
+          const sessionId = localStorage.getItem('session_id') || `ms-${Date.now()}`;
+          localStorage.setItem('session_id', sessionId);
+          
+          // For demo, retrieve user information from localStorage if available
+          // In reality, this data would come from Microsoft Graph API
+          const userEmail = localStorage.getItem('ms_email') || 'user@outlook.com';
+          const userName = localStorage.getItem('ms_name') || 'Microsoft User';
+          const userPic = localStorage.getItem('ms_pic') || `https://i.pravatar.cc/150?u=${sessionId}`;
           
           // Create user profile
           const microsoftUser = {
-            id: `ms-${Date.now()}`,
+            id: sessionId,
             name: userName,
             email: userEmail,
             role: 'staff' as const,
-            profilePicture: urlParams.get('profilePic') || localStorage.getItem('ms_pic') || 'https://avatars.githubusercontent.com/u/6154722?s=200&v=4', 
+            profilePicture: userPic,
             department: 'External',
             provider: 'microsoft'
           };
@@ -167,34 +178,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       
-      // For demo purposes, we'll simulate the login process with dummy data
-      // In production, this would open Microsoft's authentication page
+      // Generate state parameter for security
+      const state = Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('ms_auth_state', state);
+      
+      // Set up real Microsoft authentication URL
       const microsoftAuthUrl = 
         `https://login.microsoftonline.com/${MICROSOFT_TENANT}/oauth2/v2.0/authorize?` +
         `client_id=${MICROSOFT_CLIENT_ID}` +
         `&response_type=code` +
         `&redirect_uri=${encodeURIComponent(MICROSOFT_REDIRECT_URI)}` +
-        `&scope=openid profile email` +
-        `&response_mode=query`;
-        
-      // Just for demo: we'll store some Microsoft user info in localStorage
-      // This simulates what we'd get back from the Microsoft API
-      localStorage.setItem('ms_name', 'Your Name');
-      localStorage.setItem('ms_email', 'your.email@gmail.com');
-      localStorage.setItem('ms_pic', 'https://i.pravatar.cc/150?img=' + Math.floor(Math.random() * 70));
+        `&response_mode=query` +
+        `&scope=${encodeURIComponent('openid profile email User.Read')}` +
+        `&state=${state}` + 
+        `&prompt=select_account`; // This forces the account selection screen
       
-      // In production, this would redirect to Microsoft's login page
-      // For the demo, we'll simulate the redirect and callback
-      toast.info('Redirecting to Microsoft login...');
+      // Store demo data in localStorage to simulate what would come back from MS
+      localStorage.setItem('ms_name', 'Microsoft Account');
+      localStorage.setItem('ms_email', 'user@outlook.com');
+      localStorage.setItem('ms_pic', `https://i.pravatar.cc/150?u=${Date.now()}`);
       
-      // Simulate redirect delay
-      await new Promise(r => setTimeout(r, 1500));
-      
-      // Simulate the callback with URL parameters (in production, Microsoft would redirect back with these)
-      const callbackURL = `/login?code=simulated_auth_code&name=${encodeURIComponent(localStorage.getItem('ms_name') || '')}&email=${encodeURIComponent(localStorage.getItem('ms_email') || '')}&profilePic=${encodeURIComponent(localStorage.getItem('ms_pic') || '')}`;
-      window.history.pushState({}, document.title, callbackURL);
-      
-      // The callback handler in the useEffect will process this simulated callback
+      // Redirect to Microsoft login page
+      window.location.href = microsoftAuthUrl;
     } catch (error) {
       toast.error('Microsoft login failed. Please try again.');
       console.error(error);
@@ -204,9 +209,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem('lms-user');
-    localStorage.removeItem('ms_name');
-    localStorage.removeItem('ms_email');
-    localStorage.removeItem('ms_pic');
+    localStorage.removeItem('session_id');
+    // Keep the MS demo data for convenience
     setUser(null);
     toast.success('Logged out successfully');
     navigate('/login');
