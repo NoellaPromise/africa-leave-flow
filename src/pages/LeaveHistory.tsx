@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLeaveData, LeaveStatus } from '@/context/LeaveDataContext';
@@ -64,8 +63,8 @@ const LeaveHistory = () => {
           </p>
         </div>
         
-        <Link to="/leave-application">
-          <Button className="bg-purple-light hover:bg-purple-dark">
+        <Link to="/dashboard/leave-application">
+          <Button className="bg-teal-medium hover:bg-teal-dark">
             Apply for Leave
           </Button>
         </Link>
@@ -104,8 +103,8 @@ const LeaveHistory = () => {
               </p>
               
               {!searchTerm && (
-                <Link to="/leave-application" className="mt-4">
-                  <Button className="bg-purple-light hover:bg-purple-dark">
+                <Link to="/dashboard/leave-application" className="mt-4">
+                  <Button className="bg-teal-medium hover:bg-teal-dark">
                     Apply for Leave
                   </Button>
                 </Link>

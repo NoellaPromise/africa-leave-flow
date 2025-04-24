@@ -85,8 +85,8 @@ const Dashboard = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Welcome, {user.name}</h1>
         <Button 
-          onClick={() => navigate('/leave-application')}
-          className="bg-purple-light hover:bg-purple-dark"
+          onClick={() => navigate('/dashboard/leave-application')}
+          className="bg-teal-medium hover:bg-teal-dark"
         >
           Apply for Leave
         </Button>
