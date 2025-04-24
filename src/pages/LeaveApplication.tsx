@@ -104,7 +104,7 @@ const LeaveApplication = () => {
       });
       
       toast.success('Leave application submitted successfully!');
-      navigate('/leave-history');
+      navigate('/dashboard/leave-history');
     } catch (error) {
       console.error(error);
       toast.error('An error occurred. Please try again.');
@@ -305,14 +305,14 @@ const LeaveApplication = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/dashboard')}
             >
               Cancel
             </Button>
             <Button 
               type="submit"
               disabled={isSubmitting}
-              className="bg-purple-light hover:bg-purple-dark"
+              className="bg-teal-medium hover:bg-teal-dark"
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">

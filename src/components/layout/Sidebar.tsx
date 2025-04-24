@@ -20,9 +20,9 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ to, icon, label }) => {
       to={to}
       className={({ isActive }) => cn(
         'flex items-center gap-3 px-3 py-2 rounded-md transition-colors',
-        'hover:bg-purple-light/10 hover:text-purple-light',
+        'hover:bg-teal-light/10 hover:text-teal-medium',
         isActive 
-          ? 'bg-purple-light/15 text-purple-light font-medium' 
+          ? 'bg-teal-light/15 text-teal-medium font-medium' 
           : 'text-gray-700 dark:text-gray-300'
       )}
     >
@@ -47,26 +47,26 @@ const Sidebar = () => {
     >
       <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200 dark:border-gray-800">
         {isOpen ? (
-          <h1 className="text-xl font-bold text-purple-light">
-            IST Africa 
+          <h1 className="text-xl font-bold text-teal-medium">
+            Africa HR
           </h1>
         ) : (
-          <span className="text-xl font-bold text-purple-light">AHR</span>
+          <span className="text-xl font-bold text-teal-medium">AHR</span>
         )}
       </div>
       
       <div className="flex flex-col gap-1 p-3 flex-1 overflow-y-auto">
-        <SidebarLink to="/" icon={<Home size={20} />} label="Dashboard" />
-        <SidebarLink to="/leave-application" icon={<FileText size={20} />} label="Apply for Leave" />
-        <SidebarLink to="/leave-history" icon={<Clock size={20} />} label="Leave History" />
-        <SidebarLink to="/team-calendar" icon={<Calendar size={20} />} label="Team Calendar" />
+        <SidebarLink to="/dashboard" icon={<Home size={20} />} label="Dashboard" />
+        <SidebarLink to="/dashboard/leave-application" icon={<FileText size={20} />} label="Apply for Leave" />
+        <SidebarLink to="/dashboard/leave-history" icon={<Clock size={20} />} label="Leave History" />
+        <SidebarLink to="/dashboard/team-calendar" icon={<Calendar size={20} />} label="Team Calendar" />
         
         {(user.role === 'manager' || user.role === 'admin') && (
-          <SidebarLink to="/leave-approvals" icon={<List size={20} />} label="Approvals" />
+          <SidebarLink to="/dashboard/leave-approvals" icon={<List size={20} />} label="Approvals" />
         )}
         
         {user.role === 'admin' && (
-          <SidebarLink to="/admin" icon={<Settings size={20} />} label="Admin Panel" />
+          <SidebarLink to="/dashboard/admin" icon={<Settings size={20} />} label="Admin Panel" />
         )}
       </div>
       
