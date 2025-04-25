@@ -62,7 +62,7 @@ const LeaveHistory = () => {
     format(parseISO(app.startDate), 'MMM dd, yyyy').toLowerCase().includes(searchTerm.toLowerCase()) ||
     app.status.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
-  
+
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
@@ -169,19 +169,17 @@ const LeaveHistory = () => {
                       <td className="py-3 px-4 capitalize">{app.reason}</td>
                       <td className="py-3 px-4">{format(parseISO(app.startDate), 'MMM dd, yyyy')}</td>
                       <td className="py-3 px-4">{format(parseISO(app.endDate), 'MMM dd, yyyy')}</td>
-                      <td className="py-3 px-4">{app.isHalfDay ? '0.5' : (
-                        Math.ceil((parseISO(app.endDate).getTime() - parseISO(app.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
-                      )}</td>
+                      <td className="py-3 px-4">{app.halfDay ? '0.5' : app.duration}</td>
                       <td className="py-3 px-4">{getStatusBadge(app.status)}</td>
                       <td className="py-3 px-4">{format(parseISO(app.createdAt), 'MMM dd, yyyy')}</td>
                       <td className="py-3 px-4">
                         <div className="flex space-x-2">
-                          {app.status === 'pending' && (
+                          {app.status === 'PENDING' && (
                             <Button 
                               variant="outline" 
                               size="sm"
                               className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-                              onClick={() => setSelectedLeave(app.id)}
+                              onClick={() => setSelectedLeave(app.id.toString())}
                             >
                               Cancel
                             </Button>
