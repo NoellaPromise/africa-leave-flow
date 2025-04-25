@@ -1,10 +1,10 @@
-
 import { NavLink } from 'react-router-dom';
 import { useSidebar } from './SidebarProvider';
 import { useAuth } from '@/context/AuthContext';
 import { Calendar, FileText, Home, Users, Settings, Clock, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface SidebarLinkProps {
   to: string;
@@ -72,11 +72,10 @@ const Sidebar = () => {
       
       <div className="p-3 border-t border-gray-200 dark:border-gray-800">
         <div className="flex items-center gap-3 mb-3">
-          <img 
-            src={user.profilePicture} 
-            alt={user.name} 
-            className="w-10 h-10 rounded-full object-cover"
-          />
+          <Avatar>
+            <AvatarImage src={user.profilePicture} alt={user.name} />
+            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+          </Avatar>
           {isOpen && (
             <div className="flex flex-col">
               <span className="font-medium">{user.name}</span>

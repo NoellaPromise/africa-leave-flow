@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useSidebar } from './SidebarProvider';
 import { useAuth } from '@/context/AuthContext';
 import { Menu, Bell } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -58,11 +59,10 @@ const Header = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative flex items-center gap-2">
-              <img 
-                src={user.profilePicture} 
-                alt={user.name} 
-                className="w-8 h-8 rounded-full object-cover"
-              />
+              <Avatar>
+                <AvatarImage src={user.profilePicture} alt={user.name} />
+                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+              </Avatar>
               <span className="hidden sm:inline-block">{user.name}</span>
             </Button>
           </DropdownMenuTrigger>

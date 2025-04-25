@@ -22,9 +22,10 @@ interface AuthContextType {
 }
 
 // Microsoft OAuth configuration
-const MICROSOFT_CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID || '29cc5c6d-ab79-41f9-b440-9e4495a53fc5'; // Common test client ID
+const MICROSOFT_CLIENT_ID = '29cc5c6d-ab79-41f9-b440-9e4495a53fc5'; // Replace with your client ID
 const MICROSOFT_REDIRECT_URI = `${window.location.origin}/login`;
-const MICROSOFT_TENANT = 'common'; // Use "common" for both personal and work accounts
+const MICROSOFT_TENANT = 'common';
+const MICROSOFT_GRAPH_ENDPOINT = 'https://graph.microsoft.com/v1.0';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -74,15 +75,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
-  // Check if there's a saved session
-  useEffect(() => {
-    const savedUser = localStorage.getItem('lms-user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
-  }, []);
-
   // Check for Microsoft auth callback
   useEffect(() => {
     const handleMicrosoftCallback = async () => {
@@ -94,44 +86,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsLoading(true);
           toast.info('Processing Microsoft login...');
           
-          // In a production app, this would be a secure backend call
-          // For now, we'll simulate a successful authentication
-          
-          // Get user info from Microsoft Graph API
-          // Normally this would be done in a secure backend
-          // Here we're simulating successful authentication
-          
-          // Get user profile details
-          const accessToken = "simulated_token";
-          
-          // Create a random ID that remains consistent for the same session
-          const sessionId = localStorage.getItem('session_id') || `ms-${Date.now()}`;
-          localStorage.setItem('session_id', sessionId);
-          
-          // For demo, retrieve user information from localStorage if available
-          // In reality, this data would come from Microsoft Graph API
-          const userEmail = localStorage.getItem('ms_email') || 'user@outlook.com';
-          const userName = localStorage.getItem('ms_name') || 'Microsoft User';
-          const userPic = localStorage.getItem('ms_pic') || `https://i.pravatar.cc/150?u=${sessionId}`;
-          
-          // Create user profile
-          const microsoftUser = {
-            id: sessionId,
-            name: userName,
-            email: userEmail,
+          // Simulate getting user profile from Microsoft Graph API
+          // In production, this would be a secure backend call
+          const userInfo = {
+            id: `ms-${Date.now()}`,
+            name: 'Microsoft User',
+            email: 'user@microsoft.com',
             role: 'staff' as const,
-            profilePicture: userPic,
+            profilePicture: '', // We'll update this with the actual picture
             department: 'External',
             provider: 'microsoft'
           };
-          
-          // Clean URL to remove Microsoft auth params
+
+          // Get user's profile photo
+          try {
+            const photoUrl = `${MICROSOFT_GRAPH_ENDPOINT}/me/photo/$value`;
+            const response = await fetch(photoUrl);
+            if (response.ok) {
+              const blob = await response.blob();
+              userInfo.profilePicture = URL.createObjectURL(blob);
+            } else {
+              // Use a default avatar if no photo is available
+              userInfo.profilePicture = `https://i.pravatar.cc/150?u=${userInfo.id}`;
+            }
+          } catch (error) {
+            console.error('Error fetching profile photo:', error);
+            userInfo.profilePicture = `https://i.pravatar.cc/150?u=${userInfo.id}`;
+          }
+
+          // Clean URL and set user
           window.history.replaceState({}, document.title, '/login');
-          
-          // Set user and redirect
-          setUser(microsoftUser);
-          localStorage.setItem('lms-user', JSON.stringify(microsoftUser));
-          toast.success(`Welcome, ${microsoftUser.name}!`);
+          setUser(userInfo);
+          localStorage.setItem('lms-user', JSON.stringify(userInfo));
+          toast.success(`Welcome, ${userInfo.name}!`);
           navigate('/dashboard');
         } catch (error) {
           toast.error('Error processing Microsoft login');
@@ -173,7 +160,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Initiate the Microsoft OAuth flow
   const loginWithMicrosoft = async () => {
     try {
       setIsLoading(true);
@@ -182,7 +168,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const state = Math.random().toString(36).substring(2, 15);
       localStorage.setItem('ms_auth_state', state);
       
-      // Set up real Microsoft authentication URL
+      // Construct Microsoft authentication URL with required scopes
       const microsoftAuthUrl = 
         `https://login.microsoftonline.com/${MICROSOFT_TENANT}/oauth2/v2.0/authorize?` +
         `client_id=${MICROSOFT_CLIENT_ID}` +
@@ -191,14 +177,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         `&response_mode=query` +
         `&scope=${encodeURIComponent('openid profile email User.Read')}` +
         `&state=${state}` + 
-        `&prompt=select_account`; // This forces the account selection screen
+        `&prompt=select_account`;
       
-      // Store demo data in localStorage to simulate what would come back from MS
-      localStorage.setItem('ms_name', 'Microsoft Account');
-      localStorage.setItem('ms_email', 'user@outlook.com');
-      localStorage.setItem('ms_pic', `https://i.pravatar.cc/150?u=${Date.now()}`);
-      
-      // Redirect to Microsoft login page
+      // Redirect to Microsoft login
       window.location.href = microsoftAuthUrl;
     } catch (error) {
       toast.error('Microsoft login failed. Please try again.');
