@@ -1,36 +1,70 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useLeaveData, LeaveStatus } from '@/context/LeaveDataContext';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Search, FileText, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { LeaveHistory as LeaveHistoryType } from '@/types/leaveHistory';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 const LeaveHistory = () => {
   const { user } = useAuth();
-  const { getUserLeaveApplications, cancelLeaveApplication } = useLeaveData();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLeave, setSelectedLeave] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   
+  const { data: leaveHistory, isLoading, error } = useQuery({
+    queryKey: ['leaveHistory', user?.id],
+    queryFn: async () => {
+      const response = await axios.get<LeaveHistoryType[]>(`${API_URL}/leaves`);
+      return response.data;
+    },
+    enabled: !!user,
+  });
+  
   if (!user) return null;
   
-  const applications = getUserLeaveApplications(user.id);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-medium"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    toast.error('Failed to load leave history');
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <p className="text-red-500">Failed to load leave history</p>
+        <Button 
+          variant="outline" 
+          className="mt-4"
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
   
-  const filteredApplications = applications.filter(app => 
-    app.leaveType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    format(app.startDate, 'MMM dd, yyyy').toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredApplications = leaveHistory?.filter(app => 
+    app.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    format(parseISO(app.startDate), 'MMM dd, yyyy').toLowerCase().includes(searchTerm.toLowerCase()) ||
     app.status.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
   
-  const getStatusBadge = (status: LeaveStatus) => {
-    switch (status) {
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
       case 'pending':
         return <Badge variant="outline" className="bg-orange-100 text-orange-800 hover:bg-orange-100 dark:bg-orange-900 dark:text-orange-200">Pending</Badge>;
       case 'approved':
@@ -44,13 +78,18 @@ const LeaveHistory = () => {
     }
   };
   
-  const handleCancelRequest = () => {
+  const handleCancelRequest = async () => {
     if (!selectedLeave) return;
     
-    cancelLeaveApplication(selectedLeave);
-    toast.success('Leave request cancelled successfully');
-    setSelectedLeave(null);
-    setCancelReason('');
+    try {
+      await axios.post(`${API_URL}/leaves/${selectedLeave}/cancel`, { reason: cancelReason });
+      toast.success('Leave request cancelled successfully');
+    } catch (error) {
+      toast.error('Failed to cancel leave request');
+    } finally {
+      setSelectedLeave(null);
+      setCancelReason('');
+    }
   };
   
   return (
@@ -127,14 +166,14 @@ const LeaveHistory = () => {
                 <tbody>
                   {filteredApplications.map((app) => (
                     <tr key={app.id} className="border-b">
-                      <td className="py-3 px-4 capitalize">{app.leaveType}</td>
-                      <td className="py-3 px-4">{format(app.startDate, 'MMM dd, yyyy')}</td>
-                      <td className="py-3 px-4">{format(app.endDate, 'MMM dd, yyyy')}</td>
+                      <td className="py-3 px-4 capitalize">{app.reason}</td>
+                      <td className="py-3 px-4">{format(parseISO(app.startDate), 'MMM dd, yyyy')}</td>
+                      <td className="py-3 px-4">{format(parseISO(app.endDate), 'MMM dd, yyyy')}</td>
                       <td className="py-3 px-4">{app.isHalfDay ? '0.5' : (
-                        Math.ceil((app.endDate.getTime() - app.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+                        Math.ceil((parseISO(app.endDate).getTime() - parseISO(app.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
                       )}</td>
                       <td className="py-3 px-4">{getStatusBadge(app.status)}</td>
-                      <td className="py-3 px-4">{format(app.createdAt, 'MMM dd, yyyy')}</td>
+                      <td className="py-3 px-4">{format(parseISO(app.createdAt), 'MMM dd, yyyy')}</td>
                       <td className="py-3 px-4">
                         <div className="flex space-x-2">
                           {app.status === 'pending' && (
